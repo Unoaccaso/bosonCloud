@@ -14,7 +14,6 @@ setup(
           'validators',
           'beautifulsoup4',
           'numpy',
-          'time',
           'termcolor',
           'matplotlib'
       ],
