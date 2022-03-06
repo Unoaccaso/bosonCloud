@@ -42,7 +42,7 @@ Is the main class in freqle. It contains the fundamental methods for running the
         h, bin_edges = np.histogram(gaussian, bins = self.Nbh, density = True)
         p = h * np.diff(bin_edges)
     
-    than a simple random choice is used<br/>
+    than a simple random choice is used
   
       spins = numpy.random.choice(_, size = Nbh, p = p)
     
