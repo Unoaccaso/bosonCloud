@@ -44,7 +44,7 @@ Is the main class in freqle. It contains the fundamental methods for running the
     
     than a simple random choice is used
   
-      spins = numpy.random.choice(_, size = Nbh, p = p)
+        spins = numpy.random.choice(_, size = Nbh, p = p)
     
   - **spin_range :** ***1D array, optional***
   Default is [0.2, 0.9]<br/>
