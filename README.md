@@ -1,4 +1,4 @@
-# freqle# Freqle
+# Freqle
 Frequency from Black Holes is an asset containing some useful methods to simulate the emission of gravitational waves from ultralight boson clouds, around black holes in globular clusters.
 
 **Installation:**
