@@ -31,9 +31,8 @@ Is the main class in freqle. It contains the fundamental methods for running the
   Default is *gauss*<br/>
   Distribution used to randomly generate spins that will be assigned to the black holes. The options are linear '_lin_' or gaussian '_gauss_'. In case _gauss_ is chosen an array of float is generated
   
-        _ = numpy.arange(min_spin, max_spin, step)
-    
-   where step is given by
+        _ = numpy.arange(min_spin, max_spin, step)    
+    where step is given by
 
         step = (max_spin - min_spin) / Nbh.
     
