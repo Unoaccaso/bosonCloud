@@ -4,7 +4,7 @@ Frequency from Black Holes is an asset containing some useful methods to simulat
 **Installation:**
 to install the package use
 
-`pip install freqle`
+    pip install freqle
 
 # Usage
 A brief guide about how to use the package
