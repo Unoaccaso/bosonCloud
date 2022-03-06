@@ -12,15 +12,15 @@ A brief guide about how to use the package
 ## **freqle.cluster(args)**
 Is the main class in freqle. It contains the fundamental methods for running the simulations. 
 - **Parameters :**
-  - **obs_distance** : ***float, optional***
- Default is 200
- Distance in kpc between the observer and the cluster.
-  - **cluster_eta :** ***float, optional***
- Default is 1.000
- Age of the cluster in years.
-  - **Nbh :** ***int, optional***
-  Default is 20.000
-  Number of Black Holes simulated in the cluster.  
+  - **obs_distance** : ***float, optional***<br/>
+ Default is 200<br/>
+ Distance in kpc between the observer and the cluster.<br/>
+  - **cluster_eta :** ***float, optional***<br/>
+ Default is 1.000<br/>
+ Age of the cluster in years.<br/>
+  - **Nbh :** ***int, optional***<br/>
+  Default is 20.000<br/>
+  Number of Black Holes simulated in the cluster.  <br/>
   - **mass_dis :** ***float, optional***
   Default is *Kroupa*
   Distribution used to randomly generate black holes masses.
