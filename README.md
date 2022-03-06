@@ -9,7 +9,7 @@ to install the package use
 # Usage
 A brief guide about how to use the package
 
-## **freqle.cluster(args)**
+## **freqle.cluster(params)**
 Is the main class in freqle. It contains the fundamental methods for running the simulations. 
 - **Parameters :**
   - **obs_distance** : ***float, optional***
