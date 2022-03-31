@@ -487,7 +487,7 @@ class cluster(bosonGrid):
             print("=> Data saved\n")
 
     
-    def plot_freq_distr(self, mu, yscale = 'log', show_sigma = True):
+    def plot_freq_distr(self, mu, yscale = 'log', show_sigma = True, show_plot = True):
         if self.freq_distr_calculated:
             if (mu < self.mu_max) & (mu > self.mu_min):
                 mu = np.argmin(np.abs(self.boson_grid - mu))
@@ -500,18 +500,21 @@ class cluster(bosonGrid):
                 lsigma = self.saved_lsigma_freq[mu]
                 rsigma = self.saved_rsigma_freq[mu]
 
-                plt.bar(bins, counts, width = bin_size, align = 'edge')
-                plt.yscale(yscale)
+                if show_plot:
+                    plt.bar(bins, counts, width = bin_size, align = 'edge')
+                    plt.yscale(yscale)
 
-                plt.title(f"Histogram of frequencies for boson mass of ${mu_value*1e12:.2f}$" + "$\cdot 10^{-12} eV$")
-                plt.xlabel("Frequency $[Hz]$")
-                plt.ylabel("occ/prob")
+                    plt.title(f"Histogram of frequencies for boson mass of ${mu_value*1e12:.2f}$" + "$\cdot 10^{-12} eV$")
+                    plt.xlabel("Frequency $[Hz]$")
+                    plt.ylabel("occ/prob")
 
-                if show_sigma:
-                    plt.vlines(top_bin, 0, counts.max())
-                    plt.vlines(rsigma, 0, counts.max())
-                    plt.vlines(lsigma.max(), 0, counts.max())
-                plt.show()
+                    if show_sigma:
+                        plt.vlines(top_bin, 0, counts.max())
+                        plt.vlines(rsigma, 0, counts.max())
+                        plt.vlines(lsigma.max(), 0, counts.max())
+                    plt.show()
+                else:
+                    return mu_value, mu, bins, counts, bin_size
             else:
                 raise Exception("Please insert a reasonable value for boson mass")
         else:
