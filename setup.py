@@ -8,7 +8,7 @@ setup(
   author = 'Riccardo Felicetti',                   # Type in your name
   author_email = 'felicettiriccardo1@gmail.com',      # Type in your E-Mail
   url = 'https://github.com/Unoaccaso/freqle',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/Unoaccaso/freqle/archive/refs/tags/v_02.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/Unoaccaso/freqle/archive/refs/tags/v_1.0.2.tar.gz',    # I explain this later on
   keywords = ['Gravitational Waves', 'Black Holes', 'Simulation'],   # Keywords that define your package best
   install_requires=[            # I get to this in a second
           'validators',
