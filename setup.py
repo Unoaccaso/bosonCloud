@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'freqle',         # How you named your package folder (MyLib)
   packages = ['freqle'],   # Chose the same as "name"
-  version = '1.0.2',      # Start with a small number and increase it with every change you make
+  version = '1.1.0',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'The package is used to simulate the emission of gravitational waves from a cluster of black holes',   # Give a short description about your library
   author = 'Riccardo Felicetti',                   # Type in your name

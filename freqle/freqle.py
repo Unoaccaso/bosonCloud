@@ -1,8 +1,12 @@
 #freqle.py
+import trace
 import numpy as np
 from numpy import random as rnd
 from time import time
 from termcolor import colored
+
+import tracemalloc
+import psutil
 
 import matplotlib.pyplot as plt
 
@@ -208,44 +212,85 @@ class cluster(bosonGrid):
         # Returns an array of black holes masses and spin: k-th BH is Bhs[k][mass, spin]
             return self.Bhs
 
-    def emit_GW(self, remove_undetectable = True, verbose = False, v = False):
+    def emit_GW(self, remove_undetectable = True, verbose = False, v = False,
+                minimum_det_freq = 20, maximum_det_freq = 610, tau_inst_mult = 10):
+        #tracemalloc.start()
         if self.cluster_populated & self.mass_grid_built:
+
             if verbose or v:
                 print("\nEmission of Gravitational Waves...")
-                t = time()
+                start = time()
 
             Mbhs = self.Bhs[0, :]
             Sbhs = self.Bhs[1, :]
             mus = self.boson_grid
 
-            alpha = self.G/(self.c**3*self.hbar)*2e30*Mbhs*mus[:, np.newaxis]*self.onev
-            chi_c = 4*alpha/(1+4.*alpha**2)
-            tau_inst = 27*86400/10.*Mbhs*(alpha[:]/0.1)**(-9)/Sbhs
-            tau_gw = 3*6.5e4*365*86400*Mbhs/10*(alpha[:]/0.1)**(-15)/Sbhs
+            c_3 = self.c*self.c*self.c
+            alpha = self.G/(c_3*self.hbar)*2e30*Mbhs*mus[:, np.newaxis]*self.onev
+
+            # elevation to 9 potency
+            temp = alpha/0.1
+            for i in range(8):
+                temp = temp * alpha/0.1
+            tau_inst = 27*86400/10.*Mbhs*(1/temp)/Sbhs
+
+            # elevetion to 15th pot
+            temp = alpha/0.1
+            for i in range(14):
+                temp = temp * alpha/0.1                
+            tau_gw = 3*6.5e4*365*86400*Mbhs/10*(1/temp)/Sbhs
+
+            current, peak = tracemalloc.get_traced_memory()
+            del temp
 
             freq = 483*(mus[:, np.newaxis]/1e-12)*(1-0.0056/8*(Mbhs/10.)**2*(mus[:, np.newaxis]/1e-12)**2)
+
             if verbose or v:
-                print(f"=> {freq.shape[0] * freq.shape[1]:.0E} Frequencies calculated - t: {time() - t:.2f} s")
+                print(f"=> {freq.shape[0] * freq.shape[1]:.0E} Frequencies calculated")
+                end = time()
+                print(f"Total time for frequency calculation: {end - start:.2f} s")
+                print(f"Seconds per freq: {(end-start)/(freq.shape[0] * freq.shape[1]):.2E} s\n")
 
-            freq_max = self.c**3./(2*np.pi*self.G*2e30*Mbhs)*Sbhs/(1+np.sqrt(1-Sbhs**2)) # ------ Maximum allowed GW frequency
-            fdot = 7e-15*(alpha[:]/0.1)**(17)*(mus[:, np.newaxis]/1e-12)**2 # ----------------------------- Spin-up term due to boson annihilations
-            fdot2 = 1e-10*(10**17/self.fint)**4*(alpha/0.1)**(17)*(mus[:, np.newaxis]/1e-12)**2 # ----------- Spin-up term due to boson emission
+
+            freq_max = c_3/(2*np.pi*self.G*2e30*Mbhs)*Sbhs/(1+np.sqrt(1-Sbhs**2)) # ------ Maximum allowed GW frequency
+
+            # elevation to 17th pot
+            temp = alpha/0.1
+            for i in range(16):
+                temp = temp * alpha/0.1             
+            mus_2 = mus * mus / 1e-24
+
+
+            fdot = 7e-15 * mus_2[:, np.newaxis] * temp # ----------------------------- Spin-up term due to boson annihilations
+            
+            fdot2 = 1e-10*(10**17/self.fint)**4*mus_2[:, np.newaxis] * temp# ----------- Spin-up term due to boson emission
             fdot = fdot + fdot2
+            del temp
+            del fdot2
 
-            freq_now=freq+fdot*(self.cluster_eta_sec-tau_inst)
-
-            dec = np.ceil(freq_now/10)*10
-            dfr = self.Om0*np.sqrt(2*dec*self.R0/self.c) # -------------------------------------------- Search frequency bin
-            dfdot = dfr/(2*self.Tobs/self.duty)
+            freq_now = freq + fdot * (self.cluster_eta_sec-tau_inst)
+            
+            dfdot = self.Om0*np.sqrt(2*np.ceil(freq_now/10)*10*self.R0/self.c)/(2*self.Tobs/self.duty)
             
             if verbose or v:
                 print("\nCalculating wave amplitudes...")
-                t = time()
-            h0 = 1/np.sqrt(3)*3.0e-24/10*Mbhs*(alpha[:]/0.1)**7*(Sbhs-chi_c)/0.5# --- GW peak amplitude at d=1 kpc
+                emission_start = time()
+
+            
+            chi_c = 4 * alpha/( 1 + 4. * alpha * alpha)
+
+            temp = alpha/0.1
+            for i in range(6):
+                temp = temp * alpha/0.1  
+            h0 = 1/np.sqrt(3)*3.0e-24/10*Mbhs*temp*(Sbhs-chi_c)/0.5# --- GW peak amplitude at d=1 kpc
+            del temp
+
             h0 = h0/self.obs_distance
 
             timefactor = (1+(self.cluster_eta_sec-tau_inst)/tau_gw) # --------------------------- Time-dependent reduction factor
             h0 = h0/timefactor
+
+            del timefactor
 
             '''
             conditions to be met in order to have a potentially detectable signal
@@ -261,21 +306,24 @@ class cluster(bosonGrid):
             self.wave_emitted = True
             
             if verbose or v:
-                print(f"=> Gravitational Waves emitted, elapsed time: {time() - t:.2f} s")
+                emission_done = time()
+                print(f"=> Gravitational Waves emitted, elapsed time: {emission_done - emission_start:.2f} s")
 
             if remove_undetectable:
+
                 if verbose or v:
                     print("\nSelecting detectable Waves...")
-                    t = time()
+                    start_selection = time()
+
                 cond = np.array(
                     (tau_inst < self.cluster_eta_sec) & 
-                    (freq > 20) & 
-                    (freq < 610) & 
+                    (freq > minimum_det_freq) & 
+                    (freq < maximum_det_freq) & 
                     (freq < freq_max) & 
-                    (10*tau_inst < tau_gw) & 
+                    (tau_inst_mult*tau_inst < tau_gw) & 
                     (Sbhs > chi_c) & 
                     (dfdot > fdot) &
-                    (freq_now < 610)
+                    (freq_now < maximum_det_freq)
                     )
                 
                 # Applying conditions
@@ -295,7 +343,8 @@ class cluster(bosonGrid):
                     print(f"=> {self.n_mus - Mbhs.shape[0]} points were removed from the grid")
                 self.boson_grid = self.boson_grid[parser]
                 if verbose or v:
-                    print(f"=> Grid Updated - elapsed time: {time() - t:.2f} s")
+                    selection_end = time()
+                    print(f"=> Grid Updated - elapsed time: {selection_end - start_selection:.2f} s")
 
             # Updating stored data
             if verbose or v:
@@ -380,6 +429,13 @@ class cluster(bosonGrid):
         # Setup bins and determine the bin location for each element for the bins
         f_min = masked_freqs.min(axis = 1).T
         f_max = masked_freqs.max(axis = 1).T
+
+
+
+        del masked_freqs # Saving Memory space
+
+
+        
         N = freqs.shape[-1]
         bins = np.linspace(f_min, f_max, nbins+1, axis = 1)
         idx = searchsorted_2d(bins, freqs) - 1
