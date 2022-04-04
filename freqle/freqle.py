@@ -478,9 +478,10 @@ class cluster(bosonGrid):
         
         # Normalizing the bins
         if norm_distr:
-            print("=> Normalizing")
+            if v or verbose:
+                print("=> Normalizing")
             counts = counts / np.sum(counts, axis = 1)[:, np.newaxis]
-            print(counts.shape)
+            
         if verbose or v:
             print("=> Saving histograms in:\n=> - cl.saved_hists_counts\n=> - cl.saved_hists_bins")
         self.saved_hists_counts = counts
