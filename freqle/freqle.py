@@ -91,6 +91,7 @@ class cluster(bosonGrid):
         self.mass_dis = mass_dis
         self.Mbh_min = mass_range[0]
         self.Mbh_max = mass_range[1]
+
         # BH Spins
         self.spin_dis = spin_dis
         self.Sbh_min = spin_range[0]
@@ -98,7 +99,15 @@ class cluster(bosonGrid):
         self.Sbh_mean = spin_mean
         self.Sbh_sigma = spin_sigma
 
+        #Characteristic times
+        self.tau_inst = 0
+        self.tau_gw = 0
+
+        #Mass and Spin storage
         self.Bhs = None
+
+        # Unmasked mass array (May be useful)
+        self.massesUM = 0
 
         self.saved_freqs = None
         self.saved_amps = None
@@ -206,6 +215,7 @@ class cluster(bosonGrid):
                 print(f"=> Your Black Holes now have random spin with mean value {self.Sbh_mean}, a Gaussian distribution was used.\n")
         
         self.Bhs = np.array([masses, spins])
+        self.massesUM = masses
         self.cluster_populated = True
 
         if export_BH_data:
@@ -213,7 +223,7 @@ class cluster(bosonGrid):
             return self.Bhs
 
     def emit_GW(self, remove_undetectable = True, verbose = False, v = False,
-                minimum_det_freq = 20, maximum_det_freq = 610, tau_inst_mult = 10):
+                minimum_det_freq = 20, maximum_det_freq = 610, tau_inst_mult = 10, use_old = False):
         #tracemalloc.start()
         if self.cluster_populated & self.mass_grid_built:
 
@@ -239,11 +249,9 @@ class cluster(bosonGrid):
             for i in range(14):
                 temp = temp * alpha/0.1                
             tau_gw = 3*6.5e4*365*86400*Mbhs/10*(1/temp)/Sbhs
-
-            current, peak = tracemalloc.get_traced_memory()
             del temp
 
-            freq = 483*(mus[:, np.newaxis]/1e-12)*(1-0.0056/8*(Mbhs/10.)**2*(mus[:, np.newaxis]/1e-12)**2)
+            freq = 483*(1-0.0056/8*(Mbhs/10.)**2*(mus[:, np.newaxis]/1e-12)**2)*(mus[:, np.newaxis]/1e-12)
 
             if verbose or v:
                 print(f"=> {freq.shape[0] * freq.shape[1]:.0E} Frequencies calculated")
@@ -268,7 +276,13 @@ class cluster(bosonGrid):
             del temp
             del fdot2
 
-            freq_now = freq + fdot * (self.cluster_eta_sec-tau_inst)
+            # This is still to be checked
+            if use_old:
+                freq_now = freq + fdot * (self.cluster_eta_sec-tau_inst)
+            
+            else:
+                emission_stop = np.minimum(self.cluster_eta_sec, tau_gw)
+                freq_now = freq + fdot * (emission_stop-tau_inst)
             
             dfdot = self.Om0*np.sqrt(2*np.ceil(freq_now/10)*10*self.R0/self.c)/(2*self.Tobs/self.duty)
             
@@ -338,6 +352,9 @@ class cluster(bosonGrid):
                 Sbhs = Sbhs[parser]
                 freq_now = freq_now[parser]
                 h0 = h0[parser]
+
+                self.tau_gw = tau_gw
+                self.tau_inst = tau_inst
                 
                 if verbose or v:
                     print(f"=> {self.n_mus - Mbhs.shape[0]} points were removed from the grid")
@@ -463,6 +480,7 @@ class cluster(bosonGrid):
         if norm_distr:
             print("=> Normalizing")
             counts = counts / np.sum(counts, axis = 1)[:, np.newaxis]
+            print(counts.shape)
         if verbose or v:
             print("=> Saving histograms in:\n=> - cl.saved_hists_counts\n=> - cl.saved_hists_bins")
         self.saved_hists_counts = counts
@@ -513,6 +531,7 @@ class cluster(bosonGrid):
             if verbose or v:
                 print("\nRemoving outliers...")
             cond = freqs_variance < 20
+            
 
             freqs_variance = freqs_variance[cond]
             max_freqs = max_freqs[cond]
