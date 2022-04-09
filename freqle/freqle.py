@@ -223,7 +223,7 @@ class cluster(bosonGrid):
             return self.Bhs
 
     def emit_GW(self, remove_undetectable = True, verbose = False, v = False,
-                minimum_det_freq = 20, maximum_det_freq = 610, tau_inst_mult = 10, use_old = False):
+                minimum_det_freq = 20, maximum_det_freq = 610, tau_inst_mult = 10, use_old = True):
         #tracemalloc.start()
         if self.cluster_populated & self.mass_grid_built:
 
@@ -426,14 +426,13 @@ class cluster(bosonGrid):
     
     def calc_freq_distr(self, nsigma = 1, nbins = 32, norm_distr = True, remove_outliers = True, verbose = False, v = False):
         if verbose or v:
-            t1 = time()
             print("Calculating the frequency fluctuations...\n")
         sigma = { # -------------------------------------------------------------------- Convert sigma to probability range
                 1 : .68,
                 2 : .95,
                 3 : .997
                 }
-        sel_sigma = sigma[1]
+        sel_sigma = sigma[nsigma]
         freqs = np.sort(self.saved_freqs, kind = 'mergesort') # sorting candidates
         masked_freqs = np.ma.masked_equal(freqs, 0)
         em_BHs = np.count_nonzero(freqs, axis = 1)
@@ -443,44 +442,17 @@ class cluster(bosonGrid):
         if verbose or v:
             print("Making the histograms...")
 
-        # Setup bins and determine the bin location for each element for the bins
-        f_min = masked_freqs.min(axis = 1).T
-        f_max = masked_freqs.max(axis = 1).T
 
 
 
+        '''
+        //// Function for histograms
+        '''
+        bins, counts, binsizes = hist_by_row(masked_freqs, nbins=nbins, normalize=norm_distr)
         del masked_freqs # Saving Memory space
 
 
-        
-        N = freqs.shape[-1]
-        bins = np.linspace(f_min, f_max, nbins+1, axis = 1)
-        idx = searchsorted_2d(bins, freqs) - 1
 
-        # Some elements would be off limits, so get a mask for those
-        bad_mask = (idx==-1) | (idx==nbins)
-
-        # We need to use bincount to get bin based counts. To have unique IDs for
-        # each row and not get confused by the ones from other rows, we need to 
-        # offset each row by a scale (using row length for this).
-        scaled_idx = nbins*np.arange(freqs.shape[0])[:,None] + idx
-
-        # Set the bad ones to be last possible index+1 : nbins*freqs.shape[0]
-        limit = nbins*freqs.shape[0]
-        scaled_idx[bad_mask] = limit
-
-        # Get the counts and reshape to multi-dim
-        counts = np.bincount(scaled_idx.ravel(),minlength=limit+1)[:-1]
-        counts.shape = freqs.shape[:-1] + (nbins,)
-
-        bin_size = np.diff(bins, axis = 1)
-
-        
-        # Normalizing the bins
-        if norm_distr:
-            if v or verbose:
-                print("=> Normalizing")
-            counts = counts / np.sum(counts, axis = 1)[:, np.newaxis]
             
         if verbose or v:
             print("=> Saving histograms in:\n=> - cl.saved_hists_counts\n=> - cl.saved_hists_bins")
@@ -488,7 +460,7 @@ class cluster(bosonGrid):
         self.saved_hists_bins = bins
         
         # Finding the most occurring frequency
-        bin_mids = bins[:, :-1] + bin_size[:] / 2
+        bin_mids = bins[:, :-1] + binsizes[:] / 2
         if verbose or v:    
             print("=> Looking for peaks")
         max_freqs_idx = np.argmax(counts, axis = 1)
@@ -599,7 +571,6 @@ class cluster(bosonGrid):
 
 
 def searchsorted_2d (a, v, side='left', sorter=None):
-  import numpy as np
 
   # Make sure a and v are numpy arrays.
   a = np.asarray(a)
@@ -624,3 +595,68 @@ def searchsorted_2d (a, v, side='left', sorter=None):
   result = result.reshape(vi.shape) - vi['row']*a.shape[1]
 
   return result
+
+def hist_by_row( _,  nbins = None, binsize = None, normalize = False, verbose = False, v = False):
+
+    if ((nbins is None) and (binsize is None)) or ((nbins is not None) and (binsize is not None)):
+        raise Exception("Choose either a bin size or number of bins")
+
+    bins = []
+    counts = []
+    bin_sizes = []
+    if len(_.shape) < 2:
+        if (binsize is not None):
+            _min = np.min(_)
+            _max = np.max(_)
+            if _min == _max:
+                _max = _min + binsize
+            
+            nbins = int(np.ceil((_max - _min)/binsize))
+
+        temp_counts, temp_bin = np.histogram(_[~_.mask], bins = nbins)
+
+        if normalize:
+            temp_counts = temp_counts / np.sum(~_.mask)
+        
+        counts.append(temp_counts)
+        bins.append(temp_bin)        
+        bin_sizes.append(np.diff(temp_bin))  
+    
+    else:
+        for row in _:
+            if (binsize is not None):
+                _min = np.min(row)
+                _max = np.max(row)
+                if _min == _max:
+                    _max = _min + binsize
+                
+                nbins = int(np.ceil((_max - _min)/binsize))
+
+            temp_counts, temp_bin = np.histogram(row[~row.mask], bins = nbins)
+
+            if normalize:
+                temp_counts = temp_counts / np.sum(~_.mask)
+            
+            counts.append(temp_counts)
+            bins.append(temp_bin)        
+            bin_sizes.append(np.diff(temp_bin))    
+    
+    if (binsize is not None):
+
+        l = max(map(len, bins))
+        bins = np.array([np.append(x,[-1]*(l - len(x))) for x in bins])
+        bins = np.ma.masked_where(bins < 0, bins)
+
+        l = max(map(len, counts))
+        counts = np.array([np.append(x,[-1]*(l - len(x))) for x in counts])
+        counts = np.ma.masked_where(counts < 0, counts)
+
+        l = max(map(len, bin_sizes))
+        bin_sizes = np.array([np.append(x,[-1]*(l - len(x))) for x in bin_sizes])
+        bin_sizes = np.ma.masked_where(bin_sizes < 0, bin_sizes)
+
+        return bins, counts, bin_sizes
+    else:
+        return np.array(bins), np.array(counts), np.array(bin_sizes)
+
+
