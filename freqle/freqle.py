@@ -5,8 +5,6 @@ from numpy import random as rnd
 from time import time
 from termcolor import colored
 
-import tracemalloc
-import psutil
 
 import matplotlib.pyplot as plt
 
@@ -557,7 +555,7 @@ class cluster(bosonGrid):
                     plt.ylabel("occ/prob")
 
                     if show_sigma:
-                        plt.vlines(top_bin, 0, counts.max())
+                        plt.vlines(top_bin, 0, counts.max(), colors = 'black')
                         plt.vlines(rsigma, 0, counts.max())
                         plt.vlines(lsigma.max(), 0, counts.max())
                     plt.show()
