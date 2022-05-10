@@ -1,10 +1,10 @@
-# Freqle
+# bosonCloud
 Frequency from Black Holes is an asset containing some useful methods to simulate the emission of gravitational waves from ultralight boson clouds, around black holes in globular clusters.
 
 **Installation:**
 to install the package use
 
-    pip install freqle
+    pip install bosonCloud
 
 # Usage
 A brief guide about how to use the package
