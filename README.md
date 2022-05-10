@@ -7,7 +7,12 @@ to install the package use
     pip install bosonCloud
 
 # Usage
-A brief guide about how to use the package
+The boson cloud package contains functions and structures to help the simulation and the analisys of signals from boson clouds, around Black Holes.
+The package is still in development.
+
+# Freqle
+Freqle is a sub-package containings all the functions for the generation of a Black Hole cluster and the simulation of the emission of gravitational signals. A brief guide to the functions is written below
+
 
 ## **freqle.cluster(params)**
 Is the main class in freqle. It contains the fundamental methods for running the simulations. 
